@@ -95,7 +95,7 @@
     //apply tint
     if (tintColor && CGColorGetAlpha(tintColor.CGColor) > 0.0f)
     {
-        CGContextSetFillColorWithColor(ctx, [tintColor colorWithAlphaComponent:0.25].CGColor);
+        CGContextSetFillColorWithColor(ctx, [tintColor colorWithAlphaComponent:0.35].CGColor);
         CGContextSetBlendMode(ctx, kCGBlendModePlusLighter);
         CGContextFillRect(ctx, CGRectMake(0, 0, buffer1.width, buffer1.height));
     }
@@ -427,9 +427,18 @@
     UIGraphicsBeginImageContextWithOptions(self.bounds.size, YES, scale);
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextTranslateCTM(context, -self.frame.origin.x, -self.frame.origin.y);
-    NSArray *hiddenViews = [self prepareSuperviewForSnapshot:superview];
-    [superview.layer renderInContext:context];
-    [self restoreSuperviewAfterSnapshot:hiddenViews];
+
+	if (self.useWindow) {
+		[self setHidden:YES];
+		UIWindow *window = [[UIApplication sharedApplication] keyWindow];
+		[window.layer renderInContext:context];
+		[self setHidden:NO];
+	} else {
+		NSArray *hiddenViews = [self prepareSuperviewForSnapshot:superview];
+		[superview.layer renderInContext:context];
+		[self restoreSuperviewAfterSnapshot:hiddenViews];
+	}
+
     UIImage *snapshot = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     return snapshot;

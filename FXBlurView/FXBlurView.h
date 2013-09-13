@@ -55,4 +55,6 @@
 @property (nonatomic, assign) CGFloat blurRadius;
 @property (nonatomic, strong) UIColor *tintColor;
 
+@property (nonatomic, assign, getter = shouldUseWindow) BOOL useWindow;
+
 @end
