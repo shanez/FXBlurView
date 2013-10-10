@@ -35,17 +35,21 @@
 #import <objc/runtime.h>
 #import <QuartzCore/QuartzCore.h>
 
-
 #import <Availability.h>
 #if !__has_feature(objc_arc)
 #error This class requires automatic reference counting
 #endif
 
+#define DEFAULT_TINT_ALPHA_LEVEL 0.35
+
 
 @implementation UIImage (FXBlurView)
 
-- (UIImage *)blurredImageWithRadius:(CGFloat)radius iterations:(NSUInteger)iterations tintColor:(UIColor *)tintColor
-{
+- (UIImage *)blurredImageWithRadius:(CGFloat)radius iterations:(NSUInteger)iterations tintColor:(UIColor *)tintColor{
+    return [self blurredImageWithRadius:radius iterations:iterations tintColor:tintColor colorMode:kCGBlendModeLighten];
+}
+
+- (UIImage *)blurredImageWithRadius:(CGFloat)radius iterations:(NSUInteger)iterations tintColor:(UIColor *)tintColor colorMode:(CGBlendMode) colorMode{
     //image must be nonzero size
     if (floorf(self.size.width) * floorf(self.size.height) <= 0.0f) return self;
     
@@ -95,8 +99,12 @@
     //apply tint
     if (tintColor && CGColorGetAlpha(tintColor.CGColor) > 0.0f)
     {
-        CGContextSetFillColorWithColor(ctx, [tintColor colorWithAlphaComponent:0.35].CGColor);
-        CGContextSetBlendMode(ctx, kCGBlendModePlusLighter);
+        UIColor *color = tintColor;
+        if(CGColorGetAlpha(tintColor.CGColor) == 1.0f){ // If full darkness then the user just picked the color
+            color = [color colorWithAlphaComponent:DEFAULT_TINT_ALPHA_LEVEL];
+        }
+        CGContextSetFillColorWithColor(ctx, color.CGColor);
+        CGContextSetBlendMode(ctx, kCGBlendModeDarken);
         CGContextFillRect(ctx, CGRectMake(0, 0, buffer1.width, buffer1.height));
     }
     
@@ -224,7 +232,8 @@
                     
                     UIImage *blurredImage = [snapshot blurredImageWithRadius:view.blurRadius
                                                                   iterations:view.iterations
-                                                                   tintColor:view.tintColor];
+                                                                   tintColor:view.tintColor
+                                                                    colorMode:view.colorMode];
                     dispatch_sync(dispatch_get_main_queue(), ^{
                         
                         //set image
@@ -278,6 +287,7 @@
     if (!_blurRadiusSet) _blurRadius = 40.0f;
     if (!_dynamicSet) _dynamic = YES;
     if (!_blurEnabledSet) _blurEnabled = YES;
+    if (!_colorMode) _colorMode = kCGBlendModeLighten;
     self.updateInterval = _updateInterval;
     
     int unsigned numberOfMethods;
@@ -409,7 +419,8 @@
         UIImage *snapshot = [self snapshotOfSuperview:self.superview];
         UIImage *blurredImage = [snapshot blurredImageWithRadius:self.blurRadius
                                                       iterations:self.iterations
-                                                       tintColor:self.tintColor];
+                                                       tintColor:self.tintColor
+                                                        colorMode:self.colorMode];
         self.layer.contents = (id)blurredImage.CGImage;
         self.layer.contentsScale = blurredImage.scale;
     }
